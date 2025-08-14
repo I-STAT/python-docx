@@ -579,21 +579,27 @@ class CT_Tc(BaseOxmlElement):
         cells to form vertical spans.
         """
 
-        def vMerge_val(top_tc: CT_Tc):
+        def vMerge_val(current_tc: CT_Tc, top_tc: CT_Tc, remaining_height: int):
             return (
                 ST_Merge.CONTINUE
-                if top_tc is not self
+                if top_tc is not current_tc
                 else None
-                if height == 1
+                if remaining_height == 1
                 else ST_Merge.RESTART
             )
 
         top_tc = self if top_tc is None else top_tc
-        self._span_to_width(width, top_tc, vMerge_val(top_tc))
-        if height > 1:
-            tc_below = self._tc_below
-            assert tc_below is not None
-            tc_below._grow_to(width, height - 1, top_tc)
+        current_tc = self
+        remaining_height = height
+        
+        while remaining_height > 0:
+            current_tc._span_to_width(width, top_tc, vMerge_val(current_tc, top_tc, remaining_height))
+            remaining_height -= 1
+            
+            if remaining_height > 0:
+                tc_below = current_tc._tc_below
+                assert tc_below is not None
+                current_tc = tc_below
 
     def _insert_tcPr(self, tcPr: CT_TcPr) -> CT_TcPr:
         """Override default `._insert_tcPr()`."""
